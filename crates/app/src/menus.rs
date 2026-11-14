@@ -2,9 +2,9 @@ use gpui_kit::component::input::{Copy, Cut, Paste, Redo, SelectAll, Undo};
 use gpui_kit::{App, Menu, MenuItem, OsAction, PromptLevel, Window, actions};
 
 use crate::actions::{
-    NewChat, OpenBoard, OpenSettings, OpenUsage, QuickOpen, SaveBuffer, SearchWorkspace,
-    ToggleBrowser, ToggleChanges, ToggleCommandMenu, ToggleExplorer, ToggleSidePanel,
-    ToggleSidebar, ToggleTerminal,
+    CheckForUpdates, NewChat, OpenBoard, OpenSettings, OpenUsage, QuickOpen, SaveBuffer,
+    SearchWorkspace, ToggleBrowser, ToggleChanges, ToggleCommandMenu, ToggleExplorer,
+    ToggleSidePanel, ToggleSidebar, ToggleTerminal,
 };
 
 actions!(aether, [About, Hide, HideOthers, ShowAll, Quit, Minimize, Zoom, CloseWindow]);
@@ -37,6 +37,7 @@ fn menus() -> Vec<Menu> {
     vec![
         Menu::new("Aether").items([
             MenuItem::action("About Aether", About),
+            MenuItem::action("Check for Updates…", CheckForUpdates),
             MenuItem::separator(),
             MenuItem::action("Settings…", OpenSettings),
             MenuItem::separator(),

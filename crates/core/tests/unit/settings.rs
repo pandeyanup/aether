@@ -559,3 +559,14 @@ fn org_settings_default_off_and_load_from_old_files() {
     assert_eq!(serde_json::from_str::<OrgHire>("\"ask\"").unwrap(), OrgHire::Ask);
     assert_eq!(OrgLayout::ALL.map(|l| l.label()), ["Roster console", "Org chart", "Round table"]);
 }
+
+#[test]
+fn auto_check_updates_defaults_true_and_round_trips() {
+    assert!(Settings::default().auto_check_updates);
+    let old: Settings = serde_json::from_str("{}").unwrap();
+    assert!(old.auto_check_updates);
+
+    let off = Settings { auto_check_updates: false, ..Settings::default() };
+    let back: Settings = serde_json::from_str(&serde_json::to_string(&off).unwrap()).unwrap();
+    assert!(!back.auto_check_updates);
+}

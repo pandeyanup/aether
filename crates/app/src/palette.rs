@@ -10,7 +10,8 @@ use gpui_kit::component::{
 use gpui_kit::{ClipboardItem, Context, SharedString, Window};
 
 use crate::actions::{
-    NewChat, OpenSettings, OpenSkills, OpenUsage, StopGenerating, ToggleHackerNews, ToggleWebSearch,
+    CheckForUpdates, NewChat, OpenSettings, OpenSkills, OpenUsage, StopGenerating,
+    ToggleHackerNews, ToggleWebSearch,
 };
 use crate::app::orchestrate::shows_lead_chip;
 use crate::app::{ChatApp, chat_markdown, picker_value};
@@ -54,6 +55,8 @@ pub(crate) enum PaletteCommand {
     SwitchSidebar(crate::app::SidebarView),
     /// Reopen the palette filtered to chats in this state.
     FilterChats(AgentState),
+    InstallUpdate,
+    RestartToUpdate,
 }
 
 /// A palette item and the text it's found by: its label, then its keywords.
@@ -233,6 +236,8 @@ impl ChatApp {
                     .update(cx, |input, cx| input.set_value(state.filter(), window, cx));
                 self.palette.update(cx, |s, cx| s.set_query(state.filter(), window, cx));
             }
+            Some(PaletteCommand::InstallUpdate) => self.start_update(window, cx),
+            Some(PaletteCommand::RestartToUpdate) => self.restart_for_update(cx),
             None => {}
         }
     }
@@ -601,39 +606,64 @@ impl ChatApp {
         }));
         groups.push(("Skills", skills));
 
-        groups.push((
-            "Settings",
-            self.settings
-                .hackernews_enabled
-                .then(|| {
-                    (
-                        item("Open Hacker News")
-                            .icon(gpui_kit::assets::IconName::Flame)
-                            .keywords(["news", "hn", "ycombinator", "tech", "stories", "articles"])
-                            .action(Box::new(ToggleHackerNews)),
-                        None,
-                    )
-                })
-                .into_iter()
-                .chain([
-                    (
-                        item("Tasks board")
-                            .icon(gpui_kit::assets::IconName::LayoutDashboard)
-                            .keywords(["kanban", "tasks", "cards", "todo"])
-                            .action(Box::new(crate::actions::OpenBoard)),
-                        None,
-                    ),
-                    (
-                        item("Open usage")
-                            .icon(gpui_kit::assets::IconName::ChartColumn)
-                            .keywords(["cost", "tokens", "analytics", "spend", "history"])
-                            .action(Box::new(OpenUsage)),
-                        None,
-                    ),
-                    action_row("Open settings", IconName::Settings, Box::new(OpenSettings)),
-                ])
-                .collect(),
-        ));
+        let mut settings_rows: Vec<Row> = self
+            .settings
+            .hackernews_enabled
+            .then(|| {
+                (
+                    item("Open Hacker News")
+                        .icon(gpui_kit::assets::IconName::Flame)
+                        .keywords(["news", "hn", "ycombinator", "tech", "stories", "articles"])
+                        .action(Box::new(ToggleHackerNews)),
+                    None,
+                )
+            })
+            .into_iter()
+            .chain([
+                (
+                    item("Tasks board")
+                        .icon(gpui_kit::assets::IconName::LayoutDashboard)
+                        .keywords(["kanban", "tasks", "cards", "todo"])
+                        .action(Box::new(crate::actions::OpenBoard)),
+                    None,
+                ),
+                (
+                    item("Open usage")
+                        .icon(gpui_kit::assets::IconName::ChartColumn)
+                        .keywords(["cost", "tokens", "analytics", "spend", "history"])
+                        .action(Box::new(OpenUsage)),
+                    None,
+                ),
+                (
+                    item("Check for updates")
+                        .icon(IconName::RefreshCw)
+                        .keywords(["update", "upgrade", "version", "release", "github"])
+                        .action(Box::new(CheckForUpdates)),
+                    None,
+                ),
+                action_row("Open settings", IconName::Settings, Box::new(OpenSettings)),
+            ])
+            .collect();
+        match &self.update_state {
+            crate::updater::UpdateState::Available(release) => {
+                settings_rows.push((
+                    item(format!("Install update ({})", release.display_version))
+                        .icon(gpui_kit::assets::IconName::ArrowDownToLine)
+                        .keywords(["update", "upgrade", "download", "install"]),
+                    Some(PaletteCommand::InstallUpdate),
+                ));
+            }
+            crate::updater::UpdateState::ReadyToRestart { release, .. } => {
+                settings_rows.push((
+                    item(format!("Restart to update ({})", release.display_version))
+                        .icon(IconName::RefreshCw)
+                        .keywords(["update", "upgrade", "restart", "relaunch"]),
+                    Some(PaletteCommand::RestartToUpdate),
+                ));
+            }
+            _ => {}
+        }
+        groups.push(("Settings", settings_rows));
 
         let active = &self.chats[self.active];
         if !query.is_empty() && active.cancel.is_none() {

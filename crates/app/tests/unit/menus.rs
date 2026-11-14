@@ -9,4 +9,8 @@ fn menu_bar_has_standard_menus_and_native_edit_items() {
     let native =
         edit.iter().filter(|i| matches!(i, MenuItem::Action { os_action: Some(_), .. })).count();
     assert_eq!(native, 6);
+    assert!(menus[0].items.iter().any(|i| matches!(
+        i,
+        MenuItem::Action { name, .. } if name.as_ref() == "Check for Updates…"
+    )));
 }

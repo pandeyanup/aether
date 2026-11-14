@@ -10,6 +10,20 @@ pub(crate) struct SettingItem {
 
 static SETTING_CATALOG: &[SettingItem] = &[
     SettingItem {
+        id: "updates-status",
+        tab: SettingsTab::Appearance,
+        title: "Application updates",
+        description: "Check GitHub Releases and install new versions of Aether.",
+        keywords: &["update", "upgrade", "version", "release", "github", "changelog"],
+    },
+    SettingItem {
+        id: "auto-check-updates",
+        tab: SettingsTab::Appearance,
+        title: "Automatic update checks",
+        description: "Automatically check for new Aether releases in the background.",
+        keywords: &["update", "automatic", "background", "release", "check"],
+    },
+    SettingItem {
         id: "bottom-bar-entries",
         tab: SettingsTab::BottomBar,
         title: "Visible entries",

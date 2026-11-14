@@ -999,6 +999,9 @@ pub struct Settings {
     pub background_panel_width: f32,
     /// Desktop notifications when a chat finishes, fails or needs you while you look elsewhere.
     pub notifications: bool,
+    /// Whether Aether automatically checks GitHub Releases for app updates in the background.
+    #[serde(default = "default_true")]
+    pub auto_check_updates: bool,
     #[serde(default, deserialize_with = "or_default")]
     pub notify_delivery: NotifyDelivery,
     #[serde(default, deserialize_with = "or_default")]
@@ -1230,6 +1233,7 @@ impl Default for Settings {
             browser_panel_width: 480.,
             background_panel_width: default_background_panel_width(),
             notifications: true,
+            auto_check_updates: true,
             notify_delivery: NotifyDelivery::default(),
             notify_sound: NotifySound::default(),
             notify_webhook: String::new(),

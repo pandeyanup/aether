@@ -718,6 +718,9 @@ impl ChatApp {
             script_runs: Default::default(),
             voice: Default::default(),
             voice_note: None,
+            update_state: crate::updater::UpdateState::Idle,
+            update_check_run: 0,
+            update_install_run: 0,
             notes,
             notes_setting_inputs,
             hackernews: crate::hackernews::HackerNewsModel::new(),
@@ -953,6 +956,24 @@ impl ChatApp {
         }
         app.refresh_all_provider_usages(cx);
         app.detect_subscription(cx);
+        cx.background_executor()
+            .spawn(async { crate::updater::cleanup_old_update_artifacts() })
+            .detach();
+        cx.spawn_in(window, async move |this, cx| {
+            cx.background_executor().timer(Duration::from_secs(5)).await;
+            loop {
+                let tick = this.update_in(cx, |this, window, cx| {
+                    if this.settings.auto_check_updates {
+                        this.check_for_updates(false, window, cx);
+                    }
+                });
+                if tick.is_err() {
+                    break;
+                }
+                cx.background_executor().timer(crate::updater::AUTO_CHECK_INTERVAL).await;
+            }
+        })
+        .detach();
         app
     }
 }

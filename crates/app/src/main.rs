@@ -38,6 +38,7 @@ mod skills_view;
 mod suggest;
 mod sysinfo;
 mod terminal;
+mod updater;
 mod usage_view;
 mod workspace_popover;
 

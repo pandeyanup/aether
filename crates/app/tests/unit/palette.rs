@@ -72,3 +72,10 @@ fn window_move_rows_depend_on_host() {
     );
     assert!(!side.iter().any(|(_, a)| matches!(a, PaneAction::Detach)));
 }
+
+#[test]
+fn update_command_is_listed_in_palette_source() {
+    let source = include_str!("../../src/palette.rs");
+    assert!(source.contains("Check for updates"));
+    assert!(source.contains("CheckForUpdates"));
+}

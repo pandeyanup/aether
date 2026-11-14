@@ -44,6 +44,7 @@ actions!(
         NextSideTab,
         NewChat,
         OpenSettings,
+        CheckForUpdates,
         SettingsNext,
         SettingsPrevious,
         SettingsDismiss,

@@ -148,3 +148,16 @@ fn organization_searches_find_its_settings() {
         assert_eq!(hit.expect(query).tab, SettingsTab::Appearance);
     }
 }
+
+#[test]
+fn updates_settings_are_searchable_in_appearance() {
+    for (query, id) in [
+        ("update", "updates-status"),
+        ("upgrade", "updates-status"),
+        ("github", "updates-status"),
+        ("automatic update", "auto-check-updates"),
+    ] {
+        let hit = search_settings(query).into_iter().find(|m| m.id == id).expect(id);
+        assert_eq!(hit.tab, SettingsTab::Appearance);
+    }
+}

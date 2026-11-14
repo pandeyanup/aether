@@ -1,5 +1,5 @@
 use aether_core::{DateFormat, TimeFormat};
-use aether_ui::theme::{Corners, danger_text, warning_text};
+use aether_ui::theme::{Corners, danger_text, info_text, success_text, warning_text};
 use chrono::Local;
 use gpui_kit::assets::IconName as Lucide;
 use gpui_kit::component::ActiveTheme;
@@ -81,6 +81,59 @@ pub(super) fn spend_since(
 
 pub(super) fn direct_label(count: usize) -> String {
     if count > 0 { format!("Direct Chats · {count}") } else { "Direct Chats".into() }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct UpdateBadge {
+    pub label: String,
+    pub tooltip: String,
+    pub ready: bool,
+}
+
+pub(crate) fn format_update_badge(state: &crate::updater::UpdateState) -> Option<UpdateBadge> {
+    use crate::updater::{UpdateState, update_percent};
+    match state {
+        UpdateState::Available(release) => {
+            let label = format!("Update {}", release.display_version);
+            let tooltip = if release.asset.is_some() {
+                format!("Aether {} is available — click to install", release.display_version)
+            } else {
+                format!("Aether {} is available — click to download", release.display_version)
+            };
+            Some(UpdateBadge { label, tooltip, ready: false })
+        }
+        UpdateState::Downloading { release, done, total, .. } => {
+            let label = match update_percent(*done, *total) {
+                Some(pct) => format!("Updating {pct}%"),
+                None => "Updating…".to_string(),
+            };
+            Some(UpdateBadge {
+                label,
+                tooltip: format!(
+                    "Downloading Aether {} — click for details",
+                    release.display_version
+                ),
+                ready: false,
+            })
+        }
+        UpdateState::Installing { release } => Some(UpdateBadge {
+            label: "Installing update…".to_string(),
+            tooltip: format!("Installing Aether {}", release.display_version),
+            ready: false,
+        }),
+        UpdateState::ReadyToRestart { release, .. } => Some(UpdateBadge {
+            label: format!("Restart to update {}", release.display_version),
+            tooltip: format!(
+                "Aether {} is ready — click to restart and finish updating",
+                release.display_version
+            ),
+            ready: true,
+        }),
+        UpdateState::Idle
+        | UpdateState::Checking
+        | UpdateState::UpToDate { .. }
+        | UpdateState::Failed { .. } => None,
+    }
 }
 
 pub(crate) const STATUS_BAR: f32 = 30.;
@@ -294,6 +347,48 @@ impl ChatApp {
         self.chats.iter().filter(|c| !c.archived && !c.is_agent()).count()
     }
 
+    fn render_update_status(&self, view: &Entity<ChatApp>, cx: &App) -> Option<AnyElement> {
+        let badge = format_update_badge(&self.update_state)?;
+        let accent = if badge.ready { success_text(cx) } else { info_text(cx) };
+        let icon = if badge.ready { Lucide::RefreshCw } else { Lucide::ArrowDownToLine };
+        let label = badge.label;
+        let tip = badge.tooltip;
+        let click_view = view.clone();
+        Some(
+            h_flex()
+                .id("status-update")
+                .debug_selector(|| "status-update".into())
+                .flex_none()
+                .cursor_pointer()
+                .px(px(6.))
+                .py(px(2.))
+                .corner(px(4.))
+                .items_center()
+                .gap(px(5.))
+                .text_color(accent)
+                .hover(|s| s.bg(cx.theme().tokens.accent.opacity(0.15)))
+                .tooltip(move |window, cx| {
+                    gpui_kit::component::tooltip::Tooltip::new(tip.clone()).build(window, cx)
+                })
+                .on_mouse_down(MouseButton::Left, move |_, window, cx| {
+                    click_view.update(cx, |this, cx| match &this.update_state {
+                        crate::updater::UpdateState::Available(_) => this.start_update(window, cx),
+                        crate::updater::UpdateState::ReadyToRestart { .. } => {
+                            this.restart_for_update(cx)
+                        }
+                        crate::updater::UpdateState::Downloading { .. }
+                        | crate::updater::UpdateState::Installing { .. } => {
+                            this.open_page(Page::Settings, cx);
+                        }
+                        _ => {}
+                    });
+                })
+                .child(gpui_kit::svg().path(icon.path()).size(px(12.)).text_color(accent))
+                .child(div().font_medium().child(label))
+                .into_any_element(),
+        )
+    }
+
     pub(crate) fn render_global_status_bar(
         &self,
         view: &Entity<ChatApp>,
@@ -332,6 +427,7 @@ impl ChatApp {
 
         let clock_click_view = view.clone();
         let nav = self.render_status_nav(view, cx);
+        let update_status = self.render_update_status(view, cx);
         let org = self.render_org_status(view, window, cx);
         let usage = self.render_usage_strip(view, window, cx);
         let visible = |key: &str| !self.settings.bottom_bar_hidden.iter().any(|k| k == key);
@@ -395,6 +491,7 @@ impl ChatApp {
                     .min_w_0()
                     .gap_2()
                     .items_center()
+                    .children(update_status)
                     .children(org)
                     .children(resources)
                     // Right Side: Global Date & Time Clock

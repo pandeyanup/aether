@@ -733,3 +733,53 @@ fn org_item_has_no_spend_and_opens_its_popover(cx: &mut TestAppContext) {
     draw(&mut visual, &app, |_| {});
     assert!(!app.read_with(&visual, |app, _| app.org_pop.open), "second click closes");
 }
+
+#[test]
+fn update_badge_formats_active_update_states() {
+    use crate::updater::{PreRelease, ReleaseAsset, ReleaseInfo, UpdateState, Version};
+    use std::path::PathBuf;
+    use std::sync::Arc;
+    use std::sync::atomic::AtomicBool;
+
+    let release = ReleaseInfo {
+        tag: "alpha-0.1.1".into(),
+        version: Version { major: 0, minor: 1, patch: 1, pre: PreRelease::Alpha(0) },
+        display_version: "0.1.1-alpha".into(),
+        html_url: "https://github.com/PrashnaLabs/aether/releases/tag/alpha-0.1.1".into(),
+        notes: String::new(),
+        asset: Some(ReleaseAsset {
+            name: "Aether-0.1.1-alpha-macos-aarch64.dmg".into(),
+            download_url: "https://example.com/aether.dmg".into(),
+            size: 100,
+            sha256: None,
+            sha256_url: None,
+        }),
+    };
+
+    assert!(format_update_badge(&UpdateState::Idle).is_none());
+    assert!(format_update_badge(&UpdateState::Checking).is_none());
+    assert!(
+        format_update_badge(&UpdateState::UpToDate { version: "0.1.0-alpha".into() }).is_none()
+    );
+
+    let avail = format_update_badge(&UpdateState::Available(release.clone())).unwrap();
+    assert_eq!(avail.label, "Update 0.1.1-alpha");
+    assert!(!avail.ready);
+
+    let dl = format_update_badge(&UpdateState::Downloading {
+        release: release.clone(),
+        done: 45,
+        total: 100,
+        cancel: Arc::new(AtomicBool::new(false)),
+    })
+    .unwrap();
+    assert_eq!(dl.label, "Updating 45%");
+
+    let ready = format_update_badge(&UpdateState::ReadyToRestart {
+        release,
+        target: PathBuf::from("/Applications/Aether.app"),
+    })
+    .unwrap();
+    assert_eq!(ready.label, "Restart to update 0.1.1-alpha");
+    assert!(ready.ready);
+}

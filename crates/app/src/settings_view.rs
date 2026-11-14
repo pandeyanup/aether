@@ -688,6 +688,52 @@ impl ChatApp {
                             }),
                     )
                 });
+                page = page.when(show("updates-status") || show("auto-check-updates"), |page| {
+                    page.child(
+                        SettingsSection::new("Updates")
+                            .icon(Icon::new(gpui_kit::assets::IconName::RefreshCw))
+                            .when(show("updates-status"), |section| {
+                                section.child(
+                                    div()
+                                        .id("updates-status")
+                                        .debug_selector(|| "updates-status".into())
+                                        .child(
+                                            SettingsRow::new("Application updates")
+                                                .description(self.update_status_summary())
+                                                .control(self.render_update_settings_control(cx)),
+                                        ),
+                                )
+                            })
+                            .when(show("auto-check-updates"), |section| {
+                                section.child(
+                                    div()
+                                        .id("auto-check-updates")
+                                        .debug_selector(|| "auto-check-updates".into())
+                                        .child(
+                                            SettingsRow::new("Automatic update checks")
+                                                .description(
+                                                    "Automatically check GitHub Releases for new versions in the background.",
+                                                )
+                                                .control(
+                                                    Switch::new("auto-check-updates-setting")
+                                                        .checked(settings.auto_check_updates)
+                                                        .accessibility_label(
+                                                            "Automatic update checks",
+                                                        )
+                                                        .on_click(cx.listener(
+                                                            |this, checked: &bool, _, cx| {
+                                                                let checked = *checked;
+                                                                this.update_settings(cx, |s| {
+                                                                    s.auto_check_updates = checked
+                                                                });
+                                                            },
+                                                        )),
+                                                ),
+                                        ),
+                                )
+                            }),
+                    )
+                });
             }
             SettingsTab::BottomBar => {
                 let mut entry_cards = Vec::new();

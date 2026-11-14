@@ -110,6 +110,8 @@ fn settings_view_switches_between_category_and_search_results(cx: &mut gpui_kit:
     assert!(visual.debug_bounds("window-opacity").is_some());
     assert_eq!(visual.debug_bounds("window-blur").is_some(), cfg!(target_os = "macos"));
     assert!(visual.debug_bounds("notifications").is_some());
+    assert!(visual.debug_bounds("updates-status").is_some());
+    assert!(visual.debug_bounds("auto-check-updates").is_some());
     let sidebar = visual.debug_bounds("settings-sidebar").unwrap();
     assert_eq!(sidebar.size.width, px(240.));
     visual.update(|window, cx| {

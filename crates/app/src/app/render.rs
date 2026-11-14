@@ -1,8 +1,9 @@
 use crate::actions::{
-    BackToChat, FocusComposer, NewChat, NextSideTab, OpenSettings, OpenSkills, OpenUsage,
-    PreviousSideTab, QuickOpen, SaveBuffer, SearchWorkspace, StopGenerating, ToggleBrowser,
-    ToggleChanges, ToggleCommandMenu, ToggleExplorer, ToggleGlobalTerminal, ToggleHackerNews,
-    ToggleSidePanel, ToggleSidebar, ToggleTerminal, ToggleWatchList, ToggleWebSearch,
+    BackToChat, CheckForUpdates, FocusComposer, NewChat, NextSideTab, OpenSettings, OpenSkills,
+    OpenUsage, PreviousSideTab, QuickOpen, SaveBuffer, SearchWorkspace, StopGenerating,
+    ToggleBrowser, ToggleChanges, ToggleCommandMenu, ToggleExplorer, ToggleGlobalTerminal,
+    ToggleHackerNews, ToggleSidePanel, ToggleSidebar, ToggleTerminal, ToggleWatchList,
+    ToggleWebSearch,
 };
 use aether_ui::{BranchSelect, BranchSelectState, ChatScroller, field};
 use gpui_kit::component::{ActiveTheme, h_flex, v_flex};
@@ -228,6 +229,9 @@ impl Render for ChatApp {
             .on_action(
                 cx.listener(|this, _: &OpenSettings, _, cx| this.open_page(Page::Settings, cx)),
             )
+            .on_action(cx.listener(|this, _: &CheckForUpdates, window, cx| {
+                this.check_for_updates(true, window, cx)
+            }))
             .on_action(cx.listener(|this, _: &crate::actions::OpenNotes, window, cx| {
                 this.open_notes(window, cx)
             }))

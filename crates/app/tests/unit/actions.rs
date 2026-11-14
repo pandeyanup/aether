@@ -42,6 +42,12 @@ fn cycle_chat_layout_action_is_registered() {
 }
 
 #[test]
+fn check_for_updates_action_is_registered() {
+    let source = include_str!("../../src/actions.rs");
+    assert!(source.contains("CheckForUpdates"));
+}
+
+#[test]
 fn open_usage_keybinding_is_registered() {
     let source = include_str!("../../src/actions.rs");
     assert!(source.contains("KeyBinding::new(\"secondary-u\", OpenUsage, None)"));
